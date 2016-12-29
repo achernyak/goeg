@@ -10,20 +10,25 @@ import (
 )
 
 const (
-	pageTop = `<!DOCTYPE HTML><html><head>
+	decimals = 3
+	pageTop  = `<!DOCTYPE HTML><html><head>
 							<style>.error{color:#FF0000;}</style></head>
-							<title>Statistics</title>
-							<body><h3>Statistics</h3>
-							<p>Computes basic statistics for a given list of numbers</p>`
+							<title>Quadratic Equation Solver</title>
+							<body><h3>Quadratic Equation Solver</h3>
+							<p>solves equations of the form
+								a<i>x</i>^2 + b<i>x</i> + c</p>`
 	form = `<form action="/" method="POST">
 						<input type="text" name="a" size="1"><label for="a"><i>x</i></label> +
 						<input type="text" name="b" size="1"><label for="b"><i>x</i></label> +
 						<input type="text" name="c" size="1"><label for="c"> </label>
 						<input type="submit" name="calculate" value="Calculate">
 					</form>`
-	pageBottom = `</body></html>`
-	anError    = `<p class="error">%s</p>`
-	solution   = "<p>%s -> %s</p"
+	pageBottom   = `</body></html>`
+	anError      = `<p class="error">%s</p>`
+	solution     = "<p>%s -> %s</p"
+	oneSolution  = "<i>x</i>=%s"
+	twoSolutions = "<i>x</i>=%s or <i>x</i>=%s"
+	noSolution   = "<i>there are no solutions</i>"
 )
 
 func main() {
@@ -79,15 +84,52 @@ func processRequest(request *http.Request) ([3]float64, string, bool) {
 }
 
 func formatQuestion(form map[string][]string) string {
-	return fmt.Sprintf("%s<i>x</i>^2 + %s<i>x</i> + %s", form["a"][0],
-		form["b"][0], form["c"][0])
+	result := formatSignAndNumber("", form["a"][0], "<i>x</i>^2")
+	result += formatSignAndNumber(" ", form["b"][0], "<i>x</i>")
+	result += formatSignAndNumber(" ", form["c"][0], "")
+	return result
+}
+
+func formatSignAndNumber(signPad, number, suffix string) string {
+	if number == "" || number == "0" || number == "0.0" {
+		return ""
+	}
+	var sign string
+	if signPad != "" {
+		sign = signPad + "+" + signPad
+	}
+	if number[0] == '-' {
+		sign = signPad + "-" + signPad
+		number = number[1:]
+	}
+	if suffix != "" && number == "1" {
+		return sign + suffix
+	}
+	return sign + number + suffix
 }
 
 func formatSolutions(x1, x2 complex128) string {
-	if EqualComplex(x1, x2) {
-		return fmt.Sprintf("<i>x</x>=%f", x1)
+	exactlyOneSolution := false
+	if cmplx.IsNaN(x1) && cmplx.IsNaN(x2) {
+		return noSolution
 	}
-	return fmt.Sprintf("<i>x</i>=%f or <i>x</i>=%f", x1, x2)
+	if cmplx.IsNaN(x1) {
+		exactlyOneSolution = true
+		x1 = x2
+	} else if cmplx.IsNaN(x2) || EqualComplex(x1, x2) {
+		exactlyOneSolution = true
+	}
+	if exactlyOneSolution {
+		return fmt.Sprintf(oneSolution, formatComplex(x1))
+	}
+	return fmt.Sprintf(twoSolutions, formatComplex(x1), formatComplex(x2))
+}
+
+func formatComplex(x complex128) string {
+	if EqualFloat(imag(x), 0, -1) {
+		return fmt.Sprintf("%.*f", decimals, real(x))
+	}
+	return fmt.Sprintf("%.*f", decimals, x)
 }
 
 func solve(floats [3]float64) (complex128, complex128) {
