@@ -10,24 +10,71 @@ import (
 	"strings"
 )
 
+type Song struct {
+	Title    string
+	Filename string
+	Seconds  int
+}
+
 func main() {
-	if len(os.Args) == 1 || !strings.HasSuffix(os.Args[1], ".m3u") {
-		fmt.Printf("usage: %s <file.m3u>\n", filepath.Base(os.Args[0]))
+	if len(os.Args) == 1 ||
+		(!strings.HasSuffix(os.Args[1], ".m3u") &&
+			!strings.HasSuffix(os.Args[1], ".pls")) {
+		fmt.Printf("usage: %s <file.[pls|m3u]>\n", filepath.Base(os.Args[0]))
 		os.Exit(1)
 	}
 
 	if rawBytes, err := ioutil.ReadFile(os.Args[1]); err != nil {
 		log.Fatal(err)
 	} else {
-		songs := readM3uPlaylist(string(rawBytes))
-		writePlsPlaylist(songs)
+		data := string(rawBytes)
+		if strings.HasSuffix(os.Args[1], ".m3u") {
+			songs := readM3uPlaylist(data)
+			writePlsPlaylist(songs)
+		} else {
+			songs := readPlsPlaylist(data)
+			writeM3uPlaylist(songs)
+		}
 	}
 }
 
-type Song struct {
-	Title    string
-	Filename string
-	Seconds  int
+func readPlsPlaylist(data string) (songs []Song) {
+	var song Song
+	for _, line := range strings.Split(data, "\n") {
+		if line = strings.TrimSpace(line); line == "" {
+			continue
+		}
+		switch name, value := parsePlsLine(line); name {
+		case "File":
+			song.Filename = strings.Map(
+				mapPlatformDirSeparator, value)
+		case "Title":
+			song.Title = value
+		case "Length":
+			var err error
+			if song.Seconds, err = strconv.Atoi(value); err != nil {
+				log.Printf("failed to read teh duration for '%s': %v\n",
+					song.Title, err)
+				song.Seconds = 1
+			}
+		}
+		if song.Filename != "" && song.Title != "" && song.Seconds != 0 {
+			songs = append(songs, song)
+			song = Song{}
+		}
+	}
+	return songs
+}
+
+func parsePlsLine(line string) (name, value string) {
+	const separator = "="
+	if i := strings.Index(line, separator); i > -1 {
+		if j := strings.IndexAny(line, "0123456789"); j > -1 && j < i {
+			name = line[:j]
+			value = line[i+len(separator):]
+		}
+	}
+	return name, value
 }
 
 func readM3uPlaylist(data string) (songs []Song) {
@@ -83,4 +130,12 @@ func writePlsPlaylist(songs []Song) {
 		fmt.Printf("Length%d=%d\n", i, song.Seconds)
 	}
 	fmt.Printf("NumberOfEntries=%d\nVersion=2\n", len(songs))
+}
+
+func writeM3uPlaylist(songs []Song) {
+	fmt.Println("#EXTM3U")
+	for _, song := range songs {
+		fmt.Printf("#EXTINF:%d,%s\n", song.Seconds, song.Title)
+		fmt.Println(song.Filename)
+	}
 }
