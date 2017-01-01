@@ -41,7 +41,6 @@ func readM3uPlaylist(data string) (songs []Song) {
 			song.Title, song.Seconds = parseExtinfLine(line)
 		} else {
 			song.Filename = strings.Map(mapPlatformDirSeparator, line)
-			fmt.Println("vim-go")
 		}
 		if song.Filename != "" && song.Title != "" && song.Seconds != 0 {
 			songs = append(songs, song)
