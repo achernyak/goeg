@@ -100,3 +100,26 @@ func reportByWords(frequencyForWord map[string]int) {
 			frequencyForWord[word])
 	}
 }
+
+func invertStringIntMap(intForString map[string]int) map[int][]string {
+	stringsForInt := make(map[int][]string, len(intForString))
+	for key, value := range intForString {
+		stringsForInt[value] = append(stringsForInt[value], key)
+	}
+	return stringsForInt
+}
+
+func reportByFrequency(wordsForFrequency map[int][]string) {
+	frequencies := make([]int, 0, len(wordsForFrequency))
+	for frequency := range wordsForFrequency {
+		frequencies = append(frequencies, frequency)
+	}
+	sort.Ints(frequencies)
+	width := len(fmt.Sprint(frequencies[len(frequencies)-1]))
+	fmt.Println("Frequency -> Words")
+	for _, frequency := range frequencies {
+		words := wordsForFrequency[frequency]
+		sort.Strings(words)
+		fmt.Printf("%*d %s\n", width, frequency, strings.Join(words, ", "))
+	}
+}
