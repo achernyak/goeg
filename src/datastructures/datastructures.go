@@ -50,3 +50,13 @@ func UniqueInts(slice []int) []int {
 	}
 	return unique
 }
+
+func Flatten(matrix [][]int) []int {
+	slice := make([]int, 0, len(matrix)+len(matrix[0]))
+	for _, innerSlice := range matrix {
+		for _, x := range innerSlice {
+			slice = append(slice, x)
+		}
+	}
+	return slice
+}
