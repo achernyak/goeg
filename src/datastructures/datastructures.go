@@ -38,3 +38,15 @@ func main() {
 	ini := ParseIni(iniData)
 	PrintIni(ini)
 }
+
+func UniqueInts(slice []int) []int {
+	seen := map[int]bool{}
+	unique := []int{}
+	for _, x := range slice {
+		if _, found := seen[x]; !found {
+			unique = append(unique, x)
+			seen[x] = true
+		}
+	}
+	return unique
+}
