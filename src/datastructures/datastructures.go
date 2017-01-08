@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 )
 
@@ -109,4 +110,26 @@ func ParseIni(lines []string) map[string]map[string]string {
 		}
 	}
 	return ini
+}
+
+func PrintIni(ini map[string]map[string]string) {
+	groups := make([]string, 0, len(ini))
+	for group := range ini {
+		groups = append(groups, group)
+	}
+	sort.Strings(groups)
+	for i, group := range groups {
+		fmt.Printf("[%s]\n", group)
+		keys := make([]string, 0, len(ini[group]))
+		for key := range ini[group] {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			fmt.Printf("%s=%s\n", key, ini[group][key])
+		}
+		if i+1 < len(group) {
+			fmt.Println()
+		}
+	}
 }
