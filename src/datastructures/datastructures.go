@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+	"strings"
+)
 
 func main() {
 	irregularMatrix := [][]int{{1, 2, 3, 4},
@@ -80,4 +84,29 @@ func neededRows(slice []int, columns int) int {
 		rows++
 	}
 	return rows
+}
+
+func ParseIni(lines []string) map[string]map[string]string {
+	const separator = "="
+	ini := make(map[string]map[string]string)
+	group := "General"
+	for _, line := range lines {
+		line := strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, ";") {
+			continue
+		}
+		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+			group = line[1 : len(line)-1]
+		} else if i := strings.Index(line, separator); i > -1 {
+			key := line[:i]
+			value := line[i+len(separator):]
+			if _, found := ini[group]; !found {
+				ini[group] = make(map[string]string)
+			}
+			ini[group][key] = value
+		} else {
+			log.Print("failed to parse line:", line)
+		}
+	}
+	return ini
 }
