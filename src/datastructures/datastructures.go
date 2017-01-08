@@ -60,3 +60,24 @@ func Flatten(matrix [][]int) []int {
 	}
 	return slice
 }
+
+func Make2D(slice []int, columns int) [][]int {
+	matrix := make([][]int, neededRows(slice, columns))
+	for i, x := range slice {
+		row := i / columns
+		column := i % columns
+		if matrix[row] == nil {
+			matrix[row] = make([]int, columns)
+		}
+		matrix[row][column] = x
+	}
+	return matrix
+}
+
+func neededRows(slice []int, columns int) int {
+	rows := len(slice) / columns
+	if (len(slice))%columns != 0 {
+		rows++
+	}
+	return rows
+}
