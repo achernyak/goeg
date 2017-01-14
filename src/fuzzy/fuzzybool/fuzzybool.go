@@ -9,6 +9,30 @@ func New(value interface{}) (*FuzzyBool, error) {
 	return &FuzzyBool{amount}, err
 }
 
+func float32ForValue(value interface{}) (fuzzy float32, err error) {
+	switch value := value.(type) {
+	case float32:
+		fuzzy = value
+	case float64:
+	case int:
+		fuzzy = float32(value)
+	case bool:
+		fuzzy = 0
+		if value {
+			fuzzy = 1
+		}
+	default:
+		return 0, fmt.Errorf("float32ForValue(): %v is not a number or boolean",
+			value)
+	}
+	if fuzzy < 0 {
+		fuzzy = 0
+	} else if fuzzy > 1 {
+		fuzzy = 1
+	}
+	return fuzzy, nil
+}
+
 func main() {
 	a, _ := fuzzybool.New(0)
 	b, _ := fuzzybool.New(.25)
