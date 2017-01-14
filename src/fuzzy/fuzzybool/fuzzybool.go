@@ -2,6 +2,13 @@ package main
 
 import "fmt"
 
+type FuzzyBool struct{ value float32 }
+
+func New(value interface{}) (*FuzzyBool, error) {
+	amount, err := float32ForValue(value)
+	return &FuzzyBool{amount}, err
+}
+
 func main() {
 	a, _ := fuzzybool.New(0)
 	b, _ := fuzzybool.New(.25)
