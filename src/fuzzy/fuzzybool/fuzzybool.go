@@ -1,4 +1,4 @@
-package main
+package fuzzybool
 
 import "fmt"
 
@@ -72,4 +72,20 @@ func (fuzzy *FuzzyBool) Or(first *FuzzyBool,
 		}
 	}
 	return &FuzzyBool{maximum}
+}
+
+func (fuzzy *FuzzyBool) Less(other *FuzzyBool) bool {
+	return fuzzy.value < other.value
+}
+
+func (fuzzy *FuzzyBool) Equal(other *FuzzyBool) bool {
+	return fuzzy.value == other.value
+}
+
+func (fuzzy *FuzzyBool) Bool() bool {
+	return fuzzy.value >= .5
+}
+
+func (fuzzy *FuzzyBool) Float() float64 {
+	return float64(fuzzy.value)
 }
