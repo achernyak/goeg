@@ -33,6 +33,19 @@ func float32ForValue(value interface{}) (fuzzy float32, err error) {
 	return fuzzy, nil
 }
 
+func (fuzzy *FuzzyBool) String() string {
+	return fmt.Sprintf("%.0f%%", 100*fuzzy.value)
+}
+
+func (fuzzy *FuzzyBool) Set(value interface{}) (err error) {
+	fuzzy.value, err = float32ForValue(value)
+	return err
+}
+
+func (fuzzy *FuzzyBool) Copy() *FuzzyBool {
+	return &FuzzyBool{fuzzy.value}
+}
+
 func main() {
 	a, _ := fuzzybool.New(0)
 	b, _ := fuzzybool.New(.25)
