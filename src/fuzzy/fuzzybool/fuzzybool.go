@@ -49,3 +49,27 @@ func (fuzzy *FuzzyBool) Copy() *FuzzyBool {
 func (fuzzy *FuzzyBool) Not() *FuzzyBool {
 	return &FuzzyBool{1 - fuzzy.value}
 }
+
+func (fuzzy *FuzzyBool) And(first *FuzzyBool,
+	rest ...*FuzzyBool) *FuzzyBool {
+	minimum := fuzzy.value
+	rest = append(rest, first)
+	for _, other := range rest {
+		if minimum > other.value {
+			minimum = other.value
+		}
+	}
+	return &FuzzyBool{minimum}
+}
+
+func (fuzzy *FuzzyBool) Or(first *FuzzyBool,
+	rest ...*FuzzyBool) *FuzzyBool {
+	maximum := fuzzy.value
+	rest = append(rest, first)
+	for _, other := range rest {
+		if maximum < other.value {
+			maximum = other.value
+		}
+	}
+	return &FuzzyBool{maximum}
+}
