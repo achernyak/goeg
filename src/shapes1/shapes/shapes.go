@@ -38,6 +38,14 @@ func makeBoundedIntFunc(minimum, maximum int) func(int) int {
 	}
 }
 
+func caller(steps int) string {
+	name := "?"
+	if pc, _, _, ok := runtime.Caller(steps + 1); ok {
+		name = filepath.Base(runtime.FuncForPC(pc).Name())
+	}
+	return name
+}
+
 type Shape interface {
 	Fill() color.Color
 	SetFill(fill color.Color)
@@ -56,12 +64,22 @@ type RegularPolygonalShaper interface {
 	SetSides(sides int)
 }
 
-func caller(steps int) string {
-	name := "?"
-	if pc, _, _, ok := runtime.Caller(steps + 1); ok {
-		name = filepath.Base(runtime.FuncForPC(pc).Name())
+type shape struct{ fill color.Color }
+
+func newShape(fill color.Color) shape {
+	if fill == nil {
+		fill = color.Black
 	}
-	return name
+	return shape{fill}
+}
+
+func (shape shape) Fill() color.Color { return shape.fill }
+
+func (shape *shape) setFill(fill color.Color) {
+	if fill == nil {
+		fill = color.Black
+	}
+	shape.fill = fill
 }
 
 func FillImage(width, height int, fill color.Color) draw.Image {
