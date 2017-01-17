@@ -70,6 +70,24 @@ type Sideser interface {
 	SetSides(sides int)
 }
 
+type shape struct{ fill color.Color }
+
+func newShape(fill color.Color) shape {
+	if fill == nil {
+		fill = color.Black
+	}
+	return shape{fill}
+}
+
+func (shape shape) Fill() color.Color { return shape.fill }
+
+func (shape *shape) setFill(fill color.Color) {
+	if fill == nil {
+		fill = color.Black
+	}
+	shape.fill = fill
+}
+
 func FillImage(width, height int, fill color.Color) draw.Image {
 	if fill == nil {
 		fill = color.Black
