@@ -46,6 +46,30 @@ func caller(steps int) string {
 	return name
 }
 
+type Shaper interface {
+	Drawer
+	Filler
+}
+
+type Drawer interface {
+	Draw(img draw.Image, x, y int) error
+}
+
+type Filler interface {
+	Fill() color.Color
+	SetFill(fill color.Color)
+}
+
+type Radiuser interface {
+	Radius() int
+	SetRadius(radius int)
+}
+
+type Sideser interface {
+	Sides() int
+	SetSides(sides int)
+}
+
 func FillImage(width, height int, fill color.Color) draw.Image {
 	if fill == nil {
 		fill = color.Black
