@@ -38,6 +38,24 @@ func makeBoundedIntFunc(minimum, maximum int) func(int) int {
 	}
 }
 
+type Shape interface {
+	Fill() color.Color
+	SetFill(fill color.Color)
+	Draw(img draw.Image, x, y int) error
+}
+
+type CircularShape interface {
+	Shaper
+	Radius() int
+	SetRadius(radius int)
+}
+
+type RegularPolygonalShaper interface {
+	CircularShaper
+	Sides() int
+	SetSides(sides int)
+}
+
 func caller(steps int) string {
 	name := "?"
 	if pc, _, _, ok := runtime.Caller(steps + 1); ok {
