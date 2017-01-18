@@ -8,6 +8,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -144,6 +145,107 @@ func (circle *Circle) Draw(img draw.Image, x, y int) error {
 func (circle *Circle) String() string {
 	return fmt.Sprintf("circle(fill=%v, radius=%d)", circle.fill,
 		circle.radius)
+}
+
+type RegularPolygon struct {
+	*Circle
+	sides int
+}
+
+func NewRegularPolygon(fill color.Color, radius,
+	sides int) *RegularPolygon {
+	return &RegularPolygon{NewCircle(fill, radius), saneSides(sides)}
+}
+
+func (polygon *RegularPolygon) Sides() int {
+	return polygon.sides
+}
+
+func (polygon *RegularPolygon) SetSides(sides int) {
+	polygon.sides = saneSides(sides)
+}
+
+func (polygon *RegularPolygon) Draw(img draw.Image, x, y int) error {
+	if err := checkBounds(img, x, y); err != nil {
+		return err
+	}
+	points := getPoints(x, y, polygon.sides, float64(polygon.Radius()))
+	for i := 0; i < polygon.sides; i++ {
+		drawLine(img, points[i], points[i+1], polygon.Fill())
+	}
+	return nil
+}
+
+func getPoints(x, y, sides int, radius float64) []image.Point {
+	points := make([]image.Point, sides+1)
+	fullCircle := 2 * math.Pi
+	xangle, yangle := float64(x), float64(y)
+	for i := 0; i < sides; i++ {
+		angle := float64(float64(i) * fullCircle / float64(sides))
+		x1 := xangle + (radius * math.Sin(angle))
+		y1 := yangle + (radius * math.Cos(angle))
+		points[i] = image.Pt(int(x1), int(y1))
+	}
+	points[sides] = points[0]
+	return points
+}
+
+func drawLine(img draw.Image, start, end image.Point,
+	fill color.Color) {
+	x0, x1 := start.X, end.X
+	y0, y1 := start.Y, end.Y
+	Δx := math.Abs(float64(x1 - x0))
+	Δy := math.Abs(float64(y1 - y0))
+	if Δx >= Δy { // shallow slope
+		if x0 > x1 {
+			x0, y0, x1, y1 = x1, y1, x0, y0
+
+		}
+		y := y0
+		yStep := 1
+		if y0 > y1 {
+			yStep = -1
+
+		}
+		remainder := float64(int(Δx/2)) - Δx
+		for x := x0; x <= x1; x++ {
+			img.Set(x, y, fill)
+			remainder += Δy
+			if remainder >= 0.0 {
+				remainder -= Δx
+				y += yStep
+
+			}
+
+		}
+	} else { // steep slope
+		if y0 > y1 {
+			x0, y0, x1, y1 = x1, y1, x0, y0
+
+		}
+		x := x0
+		xStep := 1
+		if x0 > x1 {
+			xStep = -1
+
+		}
+		remainder := float64(int(Δy/2)) - Δy
+		for y := y0; y <= y1; y++ {
+			img.Set(x, y, fill)
+			remainder += Δx
+			if remainder >= 0.0 {
+				remainder -= Δy
+				x += xStep
+
+			}
+
+		}
+	}
+}
+
+func (polygon *RegularPolygon) String() string {
+	return fmt.Sprintf("polygon(fill=%v, radius=%d, sides=%d)",
+		polygon.Fill(), polygon.Radius(), polygon.sides)
 }
 
 func checkBounds(img image.Image, x, y int) error {
