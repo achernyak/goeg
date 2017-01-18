@@ -140,6 +140,14 @@ func (circle *Circle) String() string {
 		circle.radius)
 }
 
+func checkBounds(img image.Image, x, y int) error {
+	if !image.Rect(x, y, x, y).In(img.Bounds()) {
+		return fmt.Errorf("%s(): point (%d, %d) is outside the image\n",
+			caller(1), x, y)
+	}
+	return nil
+}
+
 func FillImage(width, height int, fill color.Color) draw.Image {
 	if fill == nil {
 		fill = color.Black
