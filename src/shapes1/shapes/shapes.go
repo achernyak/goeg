@@ -249,6 +249,24 @@ func (polygon *RegularPolygon) String() string {
 		polygon.Fill(), polygon.Radius(), polygon.sides)
 }
 
+type Option struct {
+	Fill   color.Color
+	Radius int
+}
+
+func New(shape string, option Option) (Shaper, error) {
+	sidesForShape := map[string]int{"triangle": 3, "square": 4,
+		"pentagon": 5, "hexagon": 6, "heptagon": 7, "octagon": 8,
+		"enneagon": 9, "nonagon": 9, "decagon": 10}
+	if sides, found := sidesForShape[shape]; found {
+		return NewRegularPolygon(option.Fill, option.Radius, sides), nil
+	}
+	if shape != "circle" {
+		return nil, fmt.Errorf("shapes.New(): invalide shape '%s'", shape)
+	}
+	return NewCircle(option.Fill, option.Radius), nil
+}
+
 func FillImage(width, height int, fill color.Color) draw.Image {
 	if fill == nil {
 		fill = color.Black
