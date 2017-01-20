@@ -103,4 +103,40 @@ func rotateRight(root *node) *node {
 	x.red = root.red
 	root.red = true
 	return x
+type Option struct {
+	Fill   color.Color
+type Option struct {
+	Fill   color.Color
+	Radius int
+}
+
+func New(shape string, option Option) (Shaper, error) {
+	sidesForShape := map[string]int{"triangle": 3, "square": 4,
+		"pentagon": 5, "hexagon": 6, "heptagon": 7, "octagon": 8,
+		"enneagon": 9, "nonagon": 9, "decagon": 10}
+	if sides, found := sidesForShape[shape]; found {
+		return NewRegularPolygon(option.Fill, option.Radius, sides), nil
+	}
+	if shape != "circle" {
+		return nil, fmt.Errorf("shapes.New(): invalide shape '%s'", shape)
+	}
+	return NewCircle(option.Fill, option.Radius), nil
+}
+
+	Radius int
+}
+
+func New(shape string, option Option) (Shaper, error) {
+	sidesForShape := map[string]int{"triangle": 3, "square": 4,
+		"pentagon": 5, "hexagon": 6, "heptagon": 7, "octagon": 8,
+		"enneagon": 9, "nonagon": 9, "decagon": 10}
+	if sides, found := sidesForShape[shape]; found {
+		return NewRegularPolygon(option.Fill, option.Radius, sides), nil
+	}
+	if shape != "circle" {
+		return nil, fmt.Errorf("shapes.New(): invalide shape '%s'", shape)
+	}
+	return NewCircle(option.Fill, option.Radius), nil
+}
+
 }
