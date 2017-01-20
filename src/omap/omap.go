@@ -74,3 +74,33 @@ func (m *Map) insert(root *node, key, value interface{}) (*node, bool) {
 	}
 	return root, inserted
 }
+
+func isRed(root *node) bool { return root != nil && root.red }
+
+func colorFlip(root *node) {
+	root.red = !root.red
+	if root.left != nil {
+		root.left.red = !root.left.red
+	}
+	if root.right != nil {
+		root.right.red = !root.right.red
+	}
+}
+
+func rotateLeft(root *node) *node {
+	x := root.right
+	root.right = x.left
+	x.left = root
+	x.red = root.red
+	root.red = true
+	return x
+}
+
+func rotateRight(root *node) *node {
+	x := root.left
+	root.left = x.right
+	x.right = root
+	x.red = root.red
+	root.red = true
+	return x
+}
