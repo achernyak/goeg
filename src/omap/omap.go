@@ -41,3 +41,36 @@ func NewFloat64Keyed() *Map {
 		return a.(float64) < b.(float64)
 	}}
 }
+
+func (m *Map) Insert(key, value interface{}) (inserted bool) {
+	m.root, inserted = m.insert(m.root, key, value)
+	m.root.red = false
+	if inserted {
+		m.length++
+	}
+	return inserted
+}
+
+func (m *Map) insert(root *node, key, value interface{}) (*node, bool) {
+	inserted := false
+	if root == nil {
+		return &node{key: key, value: value, red: true}, true
+	}
+	if isRed(root.left) && isRed(root.right) {
+		colorFlip(root)
+	}
+	if m.less(key, root.key) {
+		root.left, inserted = m.insert(root.left, key, value)
+	} else if m.less(root.key, key) {
+		root.right, inserted = m.insert(root.right, key, value)
+	} else {
+		root.value = value
+	}
+	if isRed(root.right) && !isRed(root.left) {
+		root = rotateLeft(root)
+	}
+	if isRed(root.left) && isRed(root.left.left) {
+		root = rotateRight(root)
+	}
+	return root, inserted
+}
