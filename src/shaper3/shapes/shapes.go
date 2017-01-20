@@ -5,9 +5,13 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"image/jpeg"
+	"image/png"
 	"math"
+	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 func clamp(minimum, x, maximum int) int {
@@ -211,4 +215,51 @@ func New(shape string, option Option) (Drawer, error) {
 
 	}
 	return Circle{option.Fill, option.Radius}, nil
+}
+
+func FilledImage(width, height int, fill color.Color) draw.Image {
+	fill = validFillColor(fill)
+	width = clamp(1, width, 4096)
+	height = clamp(1, height, 4096)
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	draw.Draw(img, img.Bounds(), &image.Uniform{fill}, image.ZP, draw.Src)
+	return img
+
+}
+
+func DrawShapes(img draw.Image, x, y int, drawers ...Drawer) error {
+	for _, drawer := range drawers {
+		if err := drawer.Draw(img, x, y); err != nil {
+			return err
+
+		}
+		// Thicker so that it shows up better in screenshots
+		if err := drawer.Draw(img, x+1, y); err != nil {
+			return err
+		}
+		if err := drawer.Draw(img, x, y+1); err != nil {
+			return err
+
+		}
+	}
+	return nil
+}
+
+func SaveImage(img image.Image, filename string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+
+	}
+	defer file.Close()
+	switch strings.ToLower(filepath.Ext(filename)) {
+	case ".jpg", ".jpeg":
+		return jpeg.Encode(file, img, nil)
+	case ".png":
+		return png.Encode(file, img)
+
+	}
+	return fmt.Errorf("shapes.SaveImage(): '%s' has an unrecognized "+
+		"suffix", filename)
+
 }
