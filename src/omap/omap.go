@@ -42,13 +42,30 @@ func NewFloat64Keyed() *Map {
 	}}
 }
 
-func (m *Map) Insert(key, value interface{}) (inserted bool) {
-	m.root, inserted = m.insert(m.root, key, value)
-	m.root.red = false
-	if inserted {
-		m.length++
+func (m *Map) Find(key interface{}) (value interface{}, found bool) {
+	root := m.root
+	for root != nil {
+		if m.less(key, root.key) {
+			root = root.left
+		} else if m.less(root.key, key) {
+			root = root.right
+		} else {
+			return root.value, true
+		}
 	}
-	return inserted
+	return nil, false
+}
+
+func (m *Map) Delete(key interface{}) (deleted bool) {
+	if m.root != nil {
+		if m.root, deleted = m.remove(m.root, key); m.root != nil {
+			m.root.red = false
+		}
+	}
+	if deleted {
+		m.length--
+	}
+	return deleted
 }
 
 func (m *Map) insert(root *node, key, value interface{}) (*node, bool) {
@@ -63,8 +80,6 @@ func (m *Map) insert(root *node, key, value interface{}) (*node, bool) {
 		root.left, inserted = m.insert(root.left, key, value)
 	} else if m.less(root.key, key) {
 		root.right, inserted = m.insert(root.right, key, value)
-	} else {
-		root.value = value
 	}
 	if isRed(root.right) && !isRed(root.left) {
 		root = rotateLeft(root)
@@ -103,4 +118,39 @@ func rotateRight(root *node) *node {
 	x.red = root.red
 	root.red = true
 	return x
+}
+
+func (m *Map) remove(root *node, key interface{}) (*node, bool) {
+	deleted := false
+	if m.less(key, root.key) {
+		if root.left != nil {
+			if !isRed(root.left) && !isRed(root.left.left) {
+				root = moveRedLeft(root)
+			}
+			root.left, deleted = m.remove(root.left, key)
+		}
+	} else {
+		if isRed(root.left) {
+			root = rotateRight(root)
+		}
+		if !m.less(key, root.key) && !m.less(root.key, key) &&
+			root.right == nil {
+			return nil, true
+		}
+		if root.right != nil {
+			if !isRed(root.right) && !isRed(root.right.left) {
+				root = moveRedRight(root)
+			}
+			if !m.less(key, root.key) && !m.less(root.key, key) {
+				smallest := first(root.right)
+				root.key = smallest.key
+				root.value = smallest.value
+				root.right = deleteMinimum(root.right)
+				deleted = true
+			} else {
+				root.right, deleted = m.remove(root.right, key)
+			}
+		}
+	}
+	return fixUp(root), deleted
 }
