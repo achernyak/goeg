@@ -120,6 +120,13 @@ func rotateRight(root *node) *node {
 	return x
 }
 
+func first(root *node) *node {
+	for root.left != nil {
+		root = root.left
+	}
+	return root
+}
+
 func (m *Map) remove(root *node, key interface{}) (*node, bool) {
 	deleted := false
 	if m.less(key, root.key) {
@@ -153,4 +160,47 @@ func (m *Map) remove(root *node, key interface{}) (*node, bool) {
 		}
 	}
 	return fixUp(root), deleted
+}
+
+func moveRedLeft(root *node) *node {
+	colorFlip(root)
+	if root.right != nil && isRed(root.right.left) {
+		root.right = rotateRight(root.right)
+		root = rotateLeft(root)
+		colorFlip(root)
+	}
+	return root
+}
+
+func moveRedRight(root *node) *node {
+	colorFlip(root)
+	if root.left != nil && isRed(root.left.left) {
+		root = rotateRight(root)
+		colorFlip(root)
+	}
+	return root
+}
+
+func deleteMinimum(root *node) *node {
+	if root.left == nil {
+		return nil
+	}
+	if !isRed(root.left) && !isRed(root.left.left) {
+		root = moveRedLeft(root)
+	}
+	root.left = deleteMinimum(root.left)
+	return fixUp(root)
+}
+
+func fixUp(root *node) *node {
+	if isRed(root.right) {
+		root = rotateLeft(root)
+	}
+	if isRed(root.left) && isRed(root.left.left) {
+		root = rotateRight(root)
+	}
+	if isRed(root.left) && isRed(root.right) {
+		colorFlip(root)
+	}
+	return root
 }
