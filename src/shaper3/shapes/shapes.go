@@ -192,6 +192,37 @@ func drawLine(img draw.Image, start, end image.Point,
 
 }
 
+type Rectangle struct {
+	color.Color
+	image.Rectangle
+	Filled bool
+}
+
+func (rectangle Rectangle) Draw(img draw.Image, x, y int) error {
+	if err := checkBounds(img, x, y); err != nil {
+		return err
+	}
+	fill := validFillColor(rectangle.Color)
+	x0 := clamp(1, rectangle.Rectangle.Min.X, 4096)
+	x1 := clamp(1, rectangle.Rectangle.Max.X, 4096)
+	y0 := clamp(1, rectangle.Rectangle.Min.Y, 4096)
+	y1 := clamp(1, rectangle.Rectangle.Max.Y, 4096)
+	x0 += x
+	x1 += x
+	y0 += y
+	y1 += y
+	if !rectangle.Filled {
+		drawLine(img, image.Point{x0, y0}, image.Point{x1, y0}, fill)
+		drawLine(img, image.Point{x0, y1}, image.Point{x1, y1}, fill)
+		drawLine(img, image.Point{x0, y0}, image.Point{x0, y1}, fill)
+		drawLine(img, image.Point{x1, y0}, image.Point{x1, y1}, fill)
+	} else {
+		draw.Draw(img, image.Rect(x0, y0, x1+1, y1+1),
+			&image.Uniform{fill}, image.Pt(x0, y0), draw.Src)
+	}
+	return nil
+}
+
 func (polygon RegularPolygon) String() string {
 	return fmt.Sprintf("polygon(fill=%v, radius=%d, sides=%d)",
 		polygon.Color, polygon.Radius, polygon.Sides)
