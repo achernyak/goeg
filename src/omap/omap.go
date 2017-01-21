@@ -68,6 +68,22 @@ func (m *Map) Delete(key interface{}) (deleted bool) {
 	return deleted
 }
 
+func (m *Map) Do(function func(interface{}, interface{})) {
+	do(m.root, function)
+}
+
+func (m *Map) Len() int {
+	return m.length
+}
+
+func do(root *node, function func(interface{}, interface{})) {
+	if root != nil {
+		do(root.left, function)
+		function(root.key, root.value)
+		do(root.right, function)
+	}
+}
+
 func (m *Map) insert(root *node, key, value interface{}) (*node, bool) {
 	inserted := false
 	if root == nil {
