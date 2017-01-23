@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -23,6 +24,30 @@ func main() {
 		channel3 := filterSize(minSize, maxSize, channel2)
 		sink(channel3)
 	}
+}
+
+func handleCommandLine() (algorithm int, minSize, maxSize int64,
+	suffixes, files []string) {
+	flag.IntVar(&algorithm, "algorithm", 1, "1 or 2")
+	flag.Int64Var(&minSize, "min", -1,
+		"minimum file size (-1 means no minimum)")
+	flag.Int64Var(&maxSize, "max", -1,
+		"maximum file size (-1 means no maximum)")
+	var suffixesOpt *string = flag.String("suffixes", "",
+		"comma-separated list of file suffixes")
+	flag.Parse()
+	if algorithm != 1 && algorithm != 2 {
+		algorithm = 1
+	}
+	if minSize > maxSize && maxSize != -1 {
+		log.Fatalln("minimum size mus be < maximum size")
+	}
+	suffixes = []string{}
+	if *suffixesOpt != "" {
+		suffixes = strings.Split(*suffixesOpt, ",")
+	}
+	files = flag.Args()
+	return algorithm, minSize, maxSize, suffixes, files
 }
 
 func source(files []string) <-chan string {
