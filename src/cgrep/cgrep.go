@@ -32,11 +32,9 @@ func main() {
 	if lineRx, err := regexp.Compile(os.Args[1]); err != nil {
 		log.Fatalf("invalid regexp: %s\n", err)
 	} else {
-		grep(lineRx, commandLineFiles(os.Args[2:]))
+		grep(lineRx, os.Args[2:])
 	}
 }
-
-var workers = runtime.NumCPU()
 
 func grep(lineRx *regexp.Regexp, filenames []string) {
 	jobs := make(chan Job, workers)
@@ -76,4 +74,13 @@ func processResults(results <-chan Result) {
 	for result := range results {
 		fmt.Printf("%s:%d:%s\n", result.filename, result.lino, result.line)
 	}
+}
+
+func minimum(x int, ys ...int) int {
+	for _, y := range ys {
+		if y < x {
+			x = y
+		}
+	}
+	return x
 }
