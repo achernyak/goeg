@@ -35,3 +35,18 @@ func main() {
 		grep(lineRx, commandLineFiles(os.Args[2:]))
 	}
 }
+
+var workers = runtime.NumCPU()
+
+func grep(lineRx *regexp.Regexp, filenames []string) {
+	jobs := make(chan Job, workers)
+	results := make(chan Result, minimum(1000, len(filename)))
+	done := make(chan struct{}, workers)
+
+	go addJobs(jobs, filenames, results)
+	for i := 0; i < workers; i++ {
+		go doJobs(done, lineRx, jobs)
+	}
+	go awaitCompletion(done, results)
+	processResults(results)
+}
