@@ -52,3 +52,13 @@ func (sm safeMap) Find(key string) (value interface{}, found bool) {
 	result := (<-reply).(findResult)
 	return result.value, result.found
 }
+
+func (sm safeMap) Len() int {
+	reply := make(chan interface{})
+	sm <- commandData{action: length, result: reply}
+	return (<-reply).(int)
+}
+
+func (sm safeMap) Update(key string, updater UpdateFunc) {
+	sm <- commandData{action: update, key: key, updater: updater}
+}
