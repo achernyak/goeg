@@ -24,6 +24,11 @@ type commandData struct {
 
 type commandAction int
 
+type findResult struct {
+	value interface{}
+	found bool
+}
+
 const (
 	remove commandAction = iota
 	end
@@ -32,3 +37,18 @@ const (
 	length
 	update
 )
+
+func (sm safeMap) Insert(key string, value interface{}) {
+	sm <- commandData{action: insert, key: key, value: value}
+}
+
+func (sm safeMap) Delete(key string) {
+	sm <- commandData{action: remove, key: key}
+}
+
+func (sm safeMap) Find(key string) (value interface{}, found bool) {
+	reply := make(chan interface{})
+	sm <- commandData{action: find, key: key, result: reply}
+	result := (<-reply).(findResult)
+	return result.value, result.found
+}
