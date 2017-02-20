@@ -62,3 +62,36 @@ func (sm safeMap) Len() int {
 func (sm safeMap) Update(key string, updater UpdateFunc) {
 	sm <- commandData{action: update, key: key, updater: updater}
 }
+
+func (sm safeMap) Close() map[string]interface{} {
+	reply := make(chan map[string]interface{})
+	sm <- commandData{action: end, data: reply}
+	return <-reply
+}
+
+func New() SafeMap {
+	sm := make(safeMap)
+	go sm.run()
+	return sm
+}
+
+func (sm safeMap) run() {
+	store := make(map[string]interface{})
+	for command := range sm {
+		switch command.action {
+		case insert:
+			store[command.key] = command.value
+		case remove:
+			delete(store, command.key)
+		case find:
+			value, found := store[command.key]
+			command.result <- findResult{value, found}
+		case update:
+			value, found := store[command.key]
+			store[command.key] = command.updater(value, found)
+		case end:
+			close(sm)
+			command.data <- store
+		}
+	}
+}
