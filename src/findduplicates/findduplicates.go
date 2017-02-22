@@ -1,7 +1,10 @@
 package main
 
 import (
+	"crypto/sha1"
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -47,11 +50,34 @@ func makeWalkFunc(infoChan chan fileInfo,
 				runtime.NumGoroutine() > maxGoroutines {
 				processFile(path, info, infoChan, nil)
 			} else {
-				writer.Add(1)
+				waiter.Add(1)
 				go processFile(path, info, infoChan,
 					func() { waiter.Done() })
 			}
 		}
 		return nil
 	}
+}
+
+func processFile(filename string, info os.FileInfo,
+	infoChan chan fileInfo, done func()) {
+	if done != nil {
+		defer done()
+	}
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Println("error:", err)
+		return
+	}
+	defer file.Close()
+	hash := sha1.New()
+	if size, err := io.Copy(hash, file); size != info.Size() || err != nil {
+		if err != nil {
+			log.Println("error:", err)
+		} else {
+			log.Println("error: failed to read the whole file:", filename)
+		}
+		return
+	}
+	infoChan <- fileInfo{hash.Sum(nil), info.Size(), filename}
 }
