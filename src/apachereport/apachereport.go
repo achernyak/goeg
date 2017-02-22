@@ -10,7 +10,29 @@ import (
 	"regexp"
 	"runtime"
 	"safemap"
+	"sync"
 )
+
+type pageMap struct {
+	countForPage map[string]int
+	mutex        *sync.RWMutex
+}
+
+func NewPageMap() *pageMap {
+	return &pageMap{make(map[string]int), new(sync.RWMutex)}
+}
+
+func (pm *pageMap) Increment(page string) {
+	pm.mutex.Lock()
+	defer pm.mutex.Unlock()
+	pm.countForPage[page]++
+}
+
+func (pm *pageMap) Len() int {
+	pm.mutex.RLock()
+	defer pm.mutex.RUnlock()
+	return len(pm.countForPage)
+}
 
 var workers = runtime.NumCPU()
 
