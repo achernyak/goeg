@@ -71,3 +71,16 @@ func processLines(done chan<- struct{}, pageMap safemap.SafeMap,
 		}()
 	}
 }
+
+func waitUntil(done <-chan struct{}) {
+	for i := 0; i < workers; i++ {
+		<-done
+	}
+}
+
+func showResults(pageMap safemap.SafeMap) {
+	pages := pageMap.Close()
+	for page, count := range pages {
+		fmt.Printf("%8d %s\n", count, page)
+	}
+}
