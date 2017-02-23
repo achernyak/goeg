@@ -121,3 +121,11 @@ func outputResults(pathData map[string]*pathsInfo) {
 		}
 	}
 }
+
+func commas(x int64) string {
+	value := fmt.Sprint(x)
+	for i := len(value) - 3; i > 0; i -= 3 {
+		value = value[:i] + "," + value[i:]
+	}
+	return value
+}
