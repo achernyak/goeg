@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"image"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -69,4 +71,82 @@ func waitUntil(done <-chan struct{}) {
 	for i := 0; i < workers; i++ {
 		<-done
 	}
+}
+
+func sizeImages(filename string) {
+	if info, err := os.Stat(filename); err != nil ||
+		(info.Mode()&os.ModeType == 1) {
+		fmt.Println("ignoring:", filename)
+		return
+	}
+	raw, err := ioutil.ReadFile(filename)
+	if err != nil {
+		fmt.Println("failed to read:", err)
+	}
+	html := string(raw)
+	fmt.Println("reading:", filename)
+
+	dir, _ := filepath.Split(filename)
+	newHtml := imageRx.ReplaceAllStringFunc(html, makeSizerFunc(dir))
+	if len(html) != len(newHtml) {
+		file, err := os.Create(filename)
+		if err != nil {
+			fmt.Printf("couldn't update %s: %v\n", filename, err)
+			return
+		}
+		defer file.Close()
+		if _, err := file.WriteString(newHtml); err != nil {
+			fmt.Printf("error when updating %s: %v\n", filename, err)
+		}
+	}
+}
+
+func makeSizerFunc(dir string) func(string) string {
+	return func(originalTag string) string {
+		tag := originalTag
+		if strings.Contains(tag, widthAttr) &&
+			strings.Contains(tag, heightAttr) {
+			return tag
+		}
+		match := srcRx.FindStringSubmatch(tag)
+		if match == nil {
+			fmt.Println("can't fine <img>'s src attribute", tag)
+			return tag
+		}
+		filename := match[1]
+		if !filepath.IsAbs(filename) {
+			filename = filepath.Join(dir, filename)
+		}
+		file, err := os.Open(filename)
+		if err != nil {
+			fmt.Println("can't open image to read its size:", err)
+			return tag
+		}
+		defer file.Close()
+
+		config, _, err := image.DecodeConfig(file)
+		if err != nil {
+			fmt.Println("can't ascertain the image's size:", err)
+			return tag
+		}
+		tag, end := tagEnd(tag)
+		if !strings.Contains(tag, widthAttr) {
+			tag += fmt.Sprintf(` %s"%d"`, widthAttr, config.Width)
+		}
+		if !strings.Contains(tag, heightAttr) {
+			tag += fmt.Sprintf(` %s"%d"`, heightAttr, config.Height)
+		}
+		tag += end
+		return tag
+	}
+}
+
+func tagEnd(originalTag string) (tag string, end string) {
+	end = ">"
+	tag = originalTag[:len(originalTag)-1]
+	if tag[len(tag)-1] == '/' {
+		end = " />"
+		tag = tag[:len(tag)-1]
+	}
+	return strings.TrimSpace(tag), end
 }
