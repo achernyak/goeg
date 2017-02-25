@@ -21,7 +21,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	files := commandLineFiles(os.Args[1:])
+	files := os.Args[1:]
 	jobs := make(chan string, workers*16)
 	results := make(chan string)
 	done := make(chan struct{}, workers)
@@ -75,15 +75,18 @@ func process(filename string) (string, bool) {
 		(info.Mode()&os.ModeType == 1) {
 		return "", false
 	}
+
 	file, err := os.Open(filename)
 	if err != nil {
 		return "", false
 	}
 	defer file.Close()
+
 	config, _, err := image.DecodeConfig(file)
 	if err != nil {
 		return "", false
 	}
+
 	return fmt.Sprintf(`<img src="%s" width="%d" height="%d" />`,
 		filepath.Base(filename), config.Width, config.Height), true
 }
