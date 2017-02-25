@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strings"
 
 	_ "image/gif"
 	_ "image/jpeg"
@@ -37,7 +38,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	files := commandLineFiles(os.Args[1:])
+	files := os.Args[1:]
 	jobs := make(chan string, workers*16)
 	done := make(chan struct{}, workers)
 	go addJobs(files, jobs)
@@ -45,4 +46,27 @@ func main() {
 		go doJobs(done, jobs)
 	}
 	waitUntil(done)
+}
+
+func addJobs(files []string, jobs chan<- string) {
+	for _, filename := range files {
+		suffix := strings.ToLower(filepath.Ext(filename))
+		if suffix == ".html" || suffix == ".htm" {
+			jobs <- filename
+		}
+	}
+	close(jobs)
+}
+
+func doJobs(done chan<- struct{}, jobs <-chan string) {
+	for job := range jobs {
+		sizeImages(job)
+	}
+	done <- struct{}{}
+}
+
+func waitUntil(done <-chan struct{}) {
+	for i := 0; i < workers; i++ {
+		<-done
+	}
 }
