@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func main() {
@@ -20,4 +21,20 @@ func main() {
 	if err := unpackArchive(filename); err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func validSuffix(filename string) bool {
+	for _, suffix := range []string{".zip", ".tar", ".tar.gz", ".tar.bz2"} {
+		if strings.HasSuffix(filename, suffix) {
+			return true
+		}
+	}
+	return false
+}
+
+func unpackArchive(filename string) error {
+	if strings.HasSuffix(filename, ".zip") {
+		return unpackZip(filename)
+	}
+	return unpackTar(filename)
 }
