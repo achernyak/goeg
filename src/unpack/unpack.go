@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -125,4 +126,14 @@ func unpackTarFile(filename, tarFilename string, reader *tar.Reader) error {
 		fmt.Printf("%s [%s]\n", filename, tarFilename)
 	}
 	return nil
+}
+
+func sanitizedName(filename string) string {
+	if len(filename) > 1 && filename[1] == ':' &&
+		runtime.GOOS == "windows" {
+		filename = filename[2:]
+	}
+	filename = filepath.ToSlash(filename)
+	filename = strings.TrimLeft(filename, "/.")
+	return strings.Replace(filename, "../", "", -1)
 }
