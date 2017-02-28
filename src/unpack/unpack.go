@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"fmt"
 	"io"
@@ -82,6 +83,46 @@ func unpackZippedFile(filename string, zipFile *zip.File) error {
 		fmt.Println(filename)
 	} else {
 		fmt.Printf("%s [%s]\n", filename, zipFile.Name)
+	}
+	return nil
+}
+
+func unpackTarFiles(reader *tar.Reader) error {
+	for {
+		header, err := reader.Next()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+		filename := sanitizedName(header.Name)
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err = os.MkdirAll(filename, 0755); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			if err = unpackTarFile(filename, header.Name, reader); err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func unpackTarFile(filename, tarFilename string, reader *tar.Reader) error {
+	writer, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer writer.Close()
+	if _, err = io.Copy(writer, reader); err != nil {
+		return err
+	}
+	if filename == tarFilename {
+		fmt.Println(filename)
+	} else {
+		fmt.Printf("%s [%s]\n", filename, tarFilename)
 	}
 	return nil
 }
