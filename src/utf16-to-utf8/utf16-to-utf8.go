@@ -1,9 +1,14 @@
 package main
 
 import (
+	"bufio"
+	"encoding/binary"
+	"errors"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"unicode/utf16"
 )
 
 func main() {
@@ -28,5 +33,33 @@ func main() {
 	}
 	if err := utf16toutf8(infile, outfile); err != nil {
 		log.Fatalln(err)
+	}
+}
+
+func utf16toutf8(infile, outfile *os.File) error {
+	writer := bufio.NewWriter(outfile)
+	defer writer.Flush()
+	bom := make([]byte, 2)
+	if _, err := infile.Read(bom); err != nil {
+		return err
+	}
+	var byteOrder binary.ByteOrder = binary.LittleEndian
+	if bom[0] == 0xFE && bom[1] == 0xFF {
+		byteOrder = binary.BigEndian
+	} else if bom[0] != 0xFF && bom[1] != 0xFE {
+		return errors.New("missing byte order mark")
+	}
+	for {
+		var c uint16
+		if err := binary.Read(infile, byteOrder, &c); err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+		if _, err := writer.WriteString(
+			string(utf16.Decode([]uint16{c}))); err != nil {
+			return err
+		}
 	}
 }
