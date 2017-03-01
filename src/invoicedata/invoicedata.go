@@ -1,8 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"io"
+	"log"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -42,5 +44,21 @@ type InvoicesUnmarshaler interface {
 }
 
 func main() {
-	fmt.Println("vim-go")
+	log.SetFlags(0)
+	if len(os.Args) != 3 || os.Args[1] == "-h" || os.Args[1] == "--help" {
+		log.Fatalf("usage: %s infile.ext outfile.ext\n"+
+			".ext may be .json or .txt optionally gzipped (e.g., .gob.gz)\n", filepath.Base(os.Args[0]))
+	}
+	inFilename, outFilename := os.Args[1], os.Args[2]
+	if inFilename == outFilename {
+		log.Fatalln("won't overwrite a file with itself")
+	}
+
+	invoices, err := readInvoiceFile(inFilename)
+	if err != nil {
+		log.Fatalln("Faild to read:", err)
+	}
+	if err := writeInvoiceFile(outFilename, invoices); err != nil {
+		log.Fatalln("Failed to write:", err)
+	}
 }
