@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -28,7 +29,7 @@ type Invoice struct {
 	Due          time.Time
 	Paid         bool
 	Note         string
-	Item         []*Item
+	Items        []*Item
 }
 
 type Item struct {
@@ -110,6 +111,33 @@ func readInvoices(reader io.Reader, suffix string) ([]*Invoice, error) {
 	return nil, fmt.Errorf("unrecognized input suffix: %s", suffix)
 }
 
+func writeInvoiceFile(filename string, invoices []*Invoice) error {
+	file, closer, err := createInvoiceFile(filename)
+	if closer != nil {
+		defer closer()
+	}
+	if err != nil {
+		return err
+	}
+	return writeInvoices(file, suffixOf(filename), invoices)
+}
+
+func createInvoiceFile(filename string) (io.WriteCloser, func(), error) {
+	file, err := os.Create(filename)
+	if err != nil {
+		return nil, nil, err
+	}
+	closer := func() { file.Close() }
+	var writer io.WriteCloser = file
+	var compressor *gzip.Writer
+	if strings.HasSuffix(filename, ".gz") {
+		compressor = gzip.NewWriter(file)
+		closer = func() { compressor.Close(); file.Close() }
+		writer = compressor
+	}
+	return writer, closer, nil
+}
+
 func writeInvoices(writer io.Writer, suffix string,
 	invoices []*Invoice) error {
 	var marshaler InvoicesMarshaler
@@ -123,4 +151,53 @@ func writeInvoices(writer io.Writer, suffix string,
 		return marshaler.MarshalInvoices(writer, invoices)
 	}
 	return errors.New("unrecognized output suffix")
+}
+
+func update(invoices []*Invoice) error {
+	for _, invoice := range invoices {
+		updateInvoice(invoice)
+		for _, item := range invoice.Items {
+			if err := updateItem(item); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func suffixOf(filename string) string {
+	suffix := filepath.Ext(filename)
+	if suffix == ".gz" {
+		suffix = filepath.Ext(filename[:len(filename)-3])
+	}
+	return suffix
+}
+
+func updateInvoice(invoice *Invoice) {
+	switch {
+	case invoice.Id < 3000:
+		invoice.DepartmentId = "GEN"
+	case invoice.Id < 4000:
+		invoice.DepartmentId = "MKT"
+	case invoice.Id < 5000:
+		invoice.DepartmentId = "COM"
+	case invoice.Id < 6000:
+		invoice.DepartmentId = "EXP"
+	case invoice.Id < 7000:
+		invoice.DepartmentId = "INP"
+	case invoice.Id < 8000:
+		invoice.DepartmentId = "TZZ"
+	case invoice.Id < 9000:
+		invoice.DepartmentId = "V20"
+	default:
+		invoice.DepartmentId = "X15"
+
+	}
+}
+
+func updateItem(item *Item) (err error) {
+	if item.TaxBand, err = strconv.Atoi(item.Id[2:3]); err != nil {
+		return fmt.Errorf("invalid item ID: %s", item.Id)
+	}
+	return nil
 }
