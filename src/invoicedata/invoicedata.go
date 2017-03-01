@@ -1,10 +1,13 @@
 package main
 
 import (
+	"compress/gzip"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -61,4 +64,47 @@ func main() {
 	if err := writeInvoiceFile(outFilename, invoices); err != nil {
 		log.Fatalln("Failed to write:", err)
 	}
+}
+
+func readInvoiceFile(filename string) ([]*Invoice, error) {
+	file, closer, err := openInvoiceFile(filename)
+	if closer != nil {
+		defer closer()
+	}
+	if err != nil {
+		return nil, err
+	}
+	return readInvoices(file, suffixOf(filename))
+}
+
+func openInvoiceFile(filename string) (io.ReadCloser, func(), error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, nil, err
+	}
+	closer := func() { file.Close() }
+	var reader io.ReadCloser = file
+	var decompressor *gzip.Reader
+	if strings.HasSuffix(filename, ".gz") {
+		if decompressor, err = gzip.NewReader(file); err != nil {
+			return file, closer, err
+		}
+		closer = func() { decompressor.Close(); file.Close() }
+		reader = decompressor
+	}
+	return reader, closer, nil
+}
+
+func readInvoices(reader io.Reader, suffix string) ([]*Invoice, error) {
+	var unmarshaler InvoicesUnmarshaler
+	switch suffix {
+	case ".jsn", ".json":
+		unmarshaler = JSONMarshaler{}
+	case ".txt":
+		unmarshaler = TxtMarshaler{}
+	}
+	if unmarshaler != nil {
+		return unmarshaler.UnmarshalInvoices(reader)
+	}
+	return nil, fmt.Errorf("unrecognized input suffix: %s", suffix)
 }
