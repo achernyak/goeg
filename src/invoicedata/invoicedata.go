@@ -2,6 +2,7 @@ package main
 
 import (
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -107,4 +108,19 @@ func readInvoices(reader io.Reader, suffix string) ([]*Invoice, error) {
 		return unmarshaler.UnmarshalInvoices(reader)
 	}
 	return nil, fmt.Errorf("unrecognized input suffix: %s", suffix)
+}
+
+func writeInvoices(writer io.Writer, suffix string,
+	invoices []*Invoice) error {
+	var marshaler InvoicesMarshaler
+	switch suffix {
+	case ".jsn", ".json":
+		marshaler = JSONMarshaler{}
+	case ".txt":
+		marshaler = TxtMarshaler{}
+	}
+	if marshaler != nil {
+		return marshaler.MarshalInvoices(writer, invoices)
+	}
+	return errors.New("unrecognized output suffix")
 }
