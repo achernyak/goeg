@@ -155,3 +155,28 @@ func parseTxtInvoice(version, lino int, line string) (invoice *Invoice,
 	}
 	return invoice, nil
 }
+
+func parseTxtItem(version, lino int, line string) (item *Item, err error) {
+	item = &Item{}
+	if version == fileVersion {
+		if _, err = fmt.Sscanf(line, "ITEM ID=%s PRICE=%f "+
+			"QUANTITY=%d TAXBAND=%d", &item.Id, &item.Price,
+			&item.Quantity, &item.TaxBand); err != nil {
+			return nil, fmt.Errorf("invalid item %v line %d", err, lino)
+
+		}
+	} else {
+		if _, err = fmt.Sscanf(line, "ITEM ID=%s PRICE=%f QUANTITY=%d",
+			&item.Id, &item.Price, &item.Quantity); err != nil {
+			return nil, fmt.Errorf("invalid item %v line %d", err, lino)
+
+		}
+	}
+	if i := strings.Index(line, noteSep); i > -1 {
+		item.Note = strings.TrimSpace(line[i+len(noteSep):])
+	}
+	if version < fileVersion {
+		updateItem(item)
+	}
+	return item, nil
+}
