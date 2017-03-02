@@ -2,6 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
 	"time"
 )
 
@@ -82,4 +85,40 @@ func (invoice *Invoice) UnmarshalJSON(data []byte) (err error) {
 		jsonInvoice.Items,
 	}
 	return nil
+}
+
+type JSONMarshaler struct{}
+
+func (JSONMarshaler) MarshalInvoices(writer io.Writer,
+	invoices []*Invoice) error {
+	encoder := json.NewEncoder(writer)
+	if err := encoder.Encode(fileType); err != nil {
+		return err
+	}
+	if err := encoder.Encode(fileVersion); err != nil {
+		return err
+	}
+	return encoder.Encode(invoices)
+}
+
+func (JSONMarshaler) UnmarshalInvoices(reader io.Reader) ([]*Invoice, error) {
+	decoder := json.NewDecoder(reader)
+	var kind string
+	if err := decoder.Decode(&kind); err != nil {
+		return nil, err
+	}
+	if kind != fileType {
+		return nil, errors.New("cannot read non-invoices json file")
+	}
+	if err := decoder.Decode(&version); err != nil {
+		return nil, err
+	}
+	if version > fileVersion {
+		return nil, fmt.Errorf("version %d is too new to read", version)
+	}
+	var invoices []*Invoice
+	if err := decoder.Decode(&invoices); err != nil {
+		return nil, err
+	}
+	return invoices, nil
 }
