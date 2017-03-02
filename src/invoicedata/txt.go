@@ -62,3 +62,28 @@ func (write writerFunc) writeItems(items []*Item) error {
 	}
 	return nil
 }
+
+func (TxtMarshaler) UnmarshalInvoices(reader io.Reader) (
+	invoices []*Invoice, err error) {
+	bufferedReader := bufio.NewReader(reader)
+	var version int
+	if version, err = checkTxtVersion(bufferedReader); err != nil {
+		return nil, err
+	}
+	var line string
+	eof := false
+	for lino := 2; !eof; lino++ {
+		line, err = bufferedReader.ReadString('\n')
+		if err == io.EOF {
+			err = nil
+			eof = true
+		} else if err != nil {
+			return nil, err
+		}
+		if invoices, err = parseTxtLine(version, lino, line,
+			invoices); err != nil {
+			return nil, err
+		}
+	}
+	return invoices, nil
+}
