@@ -48,3 +48,17 @@ func (write writerFunc) writeInvoice(invoice *Invoice) error {
 	}
 	return write("\f\n")
 }
+
+func (write writerFunc) writeItems(items []*Item) error {
+	for _, item := range items {
+		if item.Note != "" {
+			note = noteSep + " " + item.Note
+		}
+		if err := write("ITEM ID=%s PRICE=%.2f QUANTITY=%d TAXBAND=%d%s\n",
+			item.Id, item.Price, item.Quantity, item.TaxBand,
+			note); err != nil {
+			return err
+		}
+	}
+	return nil
+}
