@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"linkcheck/linkutil"
 	"log"
 	"net/url"
 	"os"
@@ -62,4 +64,48 @@ func alreadySeen(url string) bool {
 	}
 	addChannel <- url
 	return false
+}
+
+func checkPage(url, site string) {
+	if alreadySeen(url) {
+		return
+	}
+	links, err := linkutil.LinksFromURL(url)
+	if err != nil {
+		log.Println("-", err)
+		return
+	}
+	fmt.Println("+ read", url)
+	done := make(chan bool, len(links))
+	defer close(done)
+	pending := 0
+	var messages []string
+	for _, link := range links {
+		pending += processLink(link, site, url, &messages, done)
+	}
+	if len(messages) > 0 {
+		fmt.Println("+ links on", url)
+		for _, message := range messages {
+			fmt.Println("  ", message)
+		}
+	}
+	for i := 0; i < pending; i++ {
+		<-done
+	}
+}
+
+func processLink(link, site, url string, messages *[]string,
+	done chan<- bool) int {
+	localAndParsable, link := classifyLink(link, site)
+	if localAndParsable {
+		go func() {
+			checkPage(link, site)
+			done <- true
+		}()
+		return 1
+	}
+	if message := checkExists(link, url); message != "" {
+		*messages = append(*messages, message)
+	}
+	return 0
 }
