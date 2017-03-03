@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"linkcheck/linkutil"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -108,4 +109,40 @@ func processLink(link, site, url string, messages *[]string,
 		*messages = append(*messages, message)
 	}
 	return 0
+}
+
+func classifyLink(link, site string) (bool, string) {
+	var local, parsable bool
+	url := link
+	lowerLink := strings.ToLower(link)
+	if strings.HasSuffix(lowerLink, ".htm") ||
+		strings.HasSuffix(lowerLink, ".html") {
+		parsable = true
+	}
+	if !externalLinkRx.MatchString(link) {
+		local = true
+		url = site
+		if link[0] != '/' && url[len(url)-1] != '/' {
+			url += "/"
+		}
+		url += link
+	}
+	return local && parsable, url
+}
+
+func checkExists(link, url string) string {
+	if alreadySeen(link) {
+		return ""
+	}
+	if _, err := http.Head(link); err != nil {
+		errStr := err.Error()
+		if strings.Contains(errStr, "unsupported protocol scheme") {
+			return fmt.Sprint("= can't check nonhttp link:", link)
+		} else if strings.Contains(errStr, "connection timed out") {
+			return fmt.Sprint("- timed out on: ", link)
+		} else {
+			return fmt.Sprintf("- bad link %s on page %s: %v", link, url, err)
+		}
+	}
+	return fmt.Sprint("+ checked ", link)
 }
