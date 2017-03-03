@@ -39,3 +39,27 @@ func main() {
 	prepareMap()
 	checkPage(href, "http://"+url.Host)
 }
+
+func prepareMap() {
+	go func() {
+		seen := make(map[string]bool)
+		for {
+			select {
+			case url := <-addChannel:
+				seen[url] = true
+			case url := <-queryChannel:
+				_, found := seen[url]
+				seenChannel <- found
+			}
+		}
+	}()
+}
+
+func alreadySeen(url string) bool {
+	queryChannel <- url
+	if <-seenChannel {
+		return true
+	}
+	addChannel <- url
+	return false
+}
